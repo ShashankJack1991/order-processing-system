@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POST /api/orders Flow Explanation</title>
+    <style>
+        :root {
+            --bg: #f5f7fb;
+            --text: #1f2937;
+            --muted: #5b6472;
+            --card: #ffffff;
+            --line: #d9e0ea;
+            --dark: #111827;
+            --blue: #2563eb;
+            --green: #0f766e;
+            --purple: #7c3aed;
+            --orange: #b45309;
+            --red: #b42318;
+            --code: #0b1020;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1.55;
+        }
+
+        header {
+            background: var(--dark);
+            color: #ffffff;
+            padding: 34px 20px;
+        }
+
+        .wrap {
+            width: min(1100px, calc(100% - 28px));
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            font-size: 2.35rem;
+            letter-spacing: 0;
+        }
+
+        h2 {
+            margin: 0 0 16px;
+            font-size: 1.55rem;
+            letter-spacing: 0;
+        }
+
+        h3 {
+            margin: 0 0 8px;
+            font-size: 1.08rem;
+            letter-spacing: 0;
+        }
+
+        p {
+            margin: 0;
+        }
+
+        main {
+            padding: 26px 0 52px;
+        }
+
+        section {
+            margin-top: 22px;
+            background: var(--card);
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 22px;
+        }
+
+        .intro {
+            max-width: 830px;
+            color: #d1d5db;
+        }
+
+        .flow {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .flow-card {
+            border: 1px solid var(--line);
+            border-top: 5px solid var(--blue);
+            border-radius: 8px;
+            padding: 14px;
+            background: #ffffff;
+            min-height: 128px;
+        }
+
+        .flow-card:nth-child(2) { border-top-color: var(--green); }
+        .flow-card:nth-child(3) { border-top-color: var(--purple); }
+        .flow-card:nth-child(4) { border-top-color: var(--orange); }
+        .flow-card:nth-child(5) { border-top-color: var(--red); }
+
+        .number {
+            display: inline-grid;
+            place-items: center;
+            width: 28px;
+            height: 28px;
+            margin-bottom: 9px;
+            border-radius: 50%;
+            background: #e0ecff;
+            color: #1d4ed8;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .note {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-left: 4px solid var(--blue);
+            background: #eff6ff;
+            color: #1e3a8a;
+            border-radius: 6px;
+        }
+
+        .warn {
+            border-left-color: var(--orange);
+            background: #fff7ed;
+            color: #7c2d12;
+        }
+
+        .code-block {
+            margin: 12px 0;
+            background: var(--code);
+            color: #e5e7eb;
+            border-radius: 8px;
+            overflow-x: auto;
+            padding: 14px;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
+
+        .code-block .line {
+            display: block;
+            white-space: pre;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .explain-list {
+            margin: 10px 0 0;
+            padding-left: 18px;
+            color: var(--muted);
+        }
+
+        .mini-card {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 16px;
+            background: #ffffff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--line);
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: var(--dark);
+            color: #ffffff;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 7px;
+            border-radius: 6px;
+            background: #f3f4f6;
+            color: #374151;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 900px) {
+            .flow,
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="wrap">
+        <h1>POST /api/orders Full Flow</h1>
+        <p class="intro">
+            Is page me POST API ka pura flow simple Hinglish me explain kiya hai:
+            request kaise aati hai, validation kaise hoti hai, service order kaise banata hai,
+            database me save kaise hota hai, aur response kaise return hota hai.
+        </p>
+    </div>
+</header>
+
+<main class="wrap">
+    <section>
+        <h2>1. One Line Summary</h2>
+        <div class="flow">
+            <div class="flow-card">
+                <span class="number">1</span>
+                <h3>Client</h3>
+                <p class="muted">JSON request bhejta hai.</p>
+                <span class="tag">POST /api/orders</span>
+            </div>
+            <div class="flow-card">
+                <span class="number">2</span>
+                <h3>Controller</h3>
+                <p class="muted">Request receive karta hai aur validate karta hai.</p>
+            </div>
+            <div class="flow-card">
+                <span class="number">3</span>
+                <h3>Service</h3>
+                <p class="muted">Order object banata hai, total calculate karta hai.</p>
+            </div>
+            <div class="flow-card">
+                <span class="number">4</span>
+                <h3>Repository</h3>
+                <p class="muted">Order aur items database me save karta hai.</p>
+            </div>
+            <div class="flow-card">
+                <span class="number">5</span>
+                <h3>Response</h3>
+                <p class="muted">Saved order client ko return hota hai.</p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>2. Request Body</h2>
+        <p class="muted">Client Postman, frontend, ya curl se ye JSON bhejega.</p>
+        <div class="code-block">
+<span class="line">POST http://localhost:8080/api/orders</span>
+<span class="line">Content-Type: application/json</span>
+<span class="line"></span>
+<span class="line">{</span>
+<span class="line">  "customerId": 1001,</span>
+<span class="line">  "items": [</span>
+<span class="line">    { "productName": "Laptop", "quantity": 1, "price": 70000 },</span>
+<span class="line">    { "productName": "Mouse", "quantity": 2, "price": 1000 }</span>
+<span class="line">  ]</span>
+<span class="line">}</span>
+        </div>
+        <div class="note">
+            Is example me total amount = 70000 * 1 + 1000 * 2 = 72000.
+        </div>
+    </section>
+
+    <section>
+        <h2>3. Controller Code</h2>
+        <p class="muted">
+            Sabse pehle request controller me aati hai. Base path hai <span class="tag">/api/orders</span>.
+        </p>
+        <div class="code-block">
+<span class="line">19: @RestController</span>
+<span class="line">20: @RequestMapping("/api/orders")</span>
+<span class="line">21: @RequiredArgsConstructor</span>
+<span class="line">22: public class OrderController {</span>
+<span class="line"></span>
+<span class="line">24:     private final OrderService orderService;</span>
+<span class="line"></span>
+<span class="line">26:     @PostMapping</span>
+<span class="line">27:     public ResponseEntity&lt;OrderResponse&gt; createOrder(@Valid @RequestBody CreateOrderRequest request) {</span>
+<span class="line">28:         return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(request));</span>
+<span class="line">29:     }</span>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Line</th>
+                <th>Meaning</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>19</td>
+                <td><span class="tag">@RestController</span> means this class REST API response return karegi, mostly JSON.</td>
+            </tr>
+            <tr>
+                <td>20</td>
+                <td><span class="tag">@RequestMapping("/api/orders")</span> means all APIs in this controller start with /api/orders.</td>
+            </tr>
+            <tr>
+                <td>21</td>
+                <td><span class="tag">@RequiredArgsConstructor</span> Lombok constructor banata hai for final fields.</td>
+            </tr>
+            <tr>
+                <td>24</td>
+                <td>Controller service ko call karega. Actual business logic service me hota hai.</td>
+            </tr>
+            <tr>
+                <td>26</td>
+                <td><span class="tag">@PostMapping</span> means this method POST /api/orders handle karega.</td>
+            </tr>
+            <tr>
+                <td>27</td>
+                <td><span class="tag">@RequestBody</span> JSON ko Java object me convert karta hai. <span class="tag">@Valid</span> validation run karta hai.</td>
+            </tr>
+            <tr>
+                <td>28</td>
+                <td>Service ka <span class="tag">createOrder</span> method call hota hai. Response status 201 Created return hota hai.</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>4. Request DTO Validation</h2>
+        <div class="two-col">
+            <div class="mini-card">
+                <h3>CreateOrderRequest</h3>
+                <div class="code-block">
+<span class="line">19: @NotNull(message = "Customer ID is required")</span>
+<span class="line">20: private Long customerId;</span>
+<span class="line"></span>
+<span class="line">22: @NotEmpty(message = "Order must contain at least one item")</span>
+<span class="line">23: @Valid</span>
+<span class="line">24: private List&lt;OrderItemRequest&gt; items;</span>
+                </div>
+                <ul class="explain-list">
+                    <li>customerId missing hua to 400 Bad Request.</li>
+                    <li>items empty hua to 400 Bad Request.</li>
+                    <li>@Valid means list ke andar har item bhi validate hoga.</li>
+                </ul>
+            </div>
+
+            <div class="mini-card">
+                <h3>OrderItemRequest</h3>
+                <div class="code-block">
+<span class="line">20: @NotBlank(message = "Product name is required")</span>
+<span class="line">21: private String productName;</span>
+<span class="line"></span>
+<span class="line">23: @NotNull(message = "Quantity is required")</span>
+<span class="line">24: @Min(value = 1, message = "Quantity must be greater than 0")</span>
+<span class="line">25: private Integer quantity;</span>
+<span class="line"></span>
+<span class="line">27: @NotNull(message = "Price is required")</span>
+<span class="line">28: @DecimalMin(value = "0.01", message = "Price must be greater than 0")</span>
+<span class="line">29: private BigDecimal price;</span>
+                </div>
+                <ul class="explain-list">
+                    <li>productName blank nahi hona chahiye.</li>
+                    <li>quantity minimum 1 honi chahiye.</li>
+                    <li>price minimum 0.01 honi chahiye.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>5. Service Method Starts</h2>
+        <p class="muted">Controller line 28 service method call karta hai. Ab actual order creation yahan hoti hai.</p>
+        <div class="code-block">
+<span class="line">44: @Override</span>
+<span class="line">45: @Transactional</span>
+<span class="line">46: public OrderResponse createOrder(CreateOrderRequest request) {</span>
+<span class="line">47:     log.debug("Creating order for customerId: {}", request.getCustomerId());</span>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Line</th>
+                <th>Meaning</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>45</td>
+                <td><span class="tag">@Transactional</span> means save operation ek transaction me chalega. Agar beech me error aaya to DB changes rollback honge.</td>
+            </tr>
+            <tr>
+                <td>46</td>
+                <td>Method input is <span class="tag">CreateOrderRequest</span>, jo controller ne JSON se banaya.</td>
+            </tr>
+            <tr>
+                <td>47</td>
+                <td>Debug log print hota hai. Business result par impact nahi hota.</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>6. Empty Order Object Banta Hai</h2>
+        <div class="code-block">
+<span class="line">49: Order order = Order.builder()</span>
+<span class="line">50:         .customerId(request.getCustomerId())</span>
+<span class="line">51:         .status(OrderStatus.PENDING)</span>
+<span class="line">52:         .totalAmount(BigDecimal.ZERO)</span>
+<span class="line">53:         .build();</span>
+        </div>
+
+        <ul class="explain-list">
+            <li>Line 49: Builder pattern se new Order object ban raha hai.</li>
+            <li>Line 50: Request ka customerId order me set hota hai.</li>
+            <li>Line 51: New order ka default status PENDING set hota hai.</li>
+            <li>Line 52: Pehle total amount 0 rakha jata hai.</li>
+            <li>Line 53: Object create ho jata hai, abhi database me save nahi hua.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>7. Items Loop And Total Calculation</h2>
+        <div class="code-block">
+<span class="line">55: BigDecimal total = BigDecimal.ZERO;</span>
+<span class="line">56: for (OrderItemRequest itemReq : request.getItems()) {</span>
+<span class="line">57:     OrderItem item = OrderItem.builder()</span>
+<span class="line">58:             .productName(itemReq.getProductName())</span>
+<span class="line">59:             .quantity(itemReq.getQuantity())</span>
+<span class="line">60:             .price(itemReq.getPrice())</span>
+<span class="line">61:             .build();</span>
+<span class="line">62:     order.addItem(item);</span>
+<span class="line">63:     total = total.add(itemReq.getPrice().multiply(BigDecimal.valueOf(itemReq.getQuantity())));</span>
+<span class="line">64: }</span>
+<span class="line">65: order.setTotalAmount(total);</span>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Line</th>
+                <th>Meaning</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>55</td>
+                <td>Total amount 0 se start hota hai.</td>
+            </tr>
+            <tr>
+                <td>56</td>
+                <td>Request ke har item par loop chalega.</td>
+            </tr>
+            <tr>
+                <td>57-61</td>
+                <td>Har request item se ek <span class="tag">OrderItem</span> entity banti hai.</td>
+            </tr>
+            <tr>
+                <td>62</td>
+                <td>Item ko order ke andar add kiya jata hai. Ye parent-child relation set karta hai.</td>
+            </tr>
+            <tr>
+                <td>63</td>
+                <td>Total me <span class="tag">price * quantity</span> add hota hai.</td>
+            </tr>
+            <tr>
+                <td>65</td>
+                <td>Final total amount Order object me set hota hai.</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="note">
+            BigDecimal use hota hai because money calculation double/float se inaccurate ho sakti hai.
+        </div>
+    </section>
+
+    <section>
+        <h2>8. order.addItem(item) Kya Karta Hai?</h2>
+        <p class="muted">Ye method Order entity me hai. Ye bahut important hai.</p>
+        <div class="code-block">
+<span class="line">44: @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)</span>
+<span class="line">45: @Builder.Default</span>
+<span class="line">46: private List&lt;OrderItem&gt; items = new ArrayList&lt;&gt;();</span>
+<span class="line"></span>
+<span class="line">48: public void addItem(OrderItem item) {</span>
+<span class="line">49:     items.add(item);</span>
+<span class="line">50:     item.setOrder(this);</span>
+<span class="line">51: }</span>
+        </div>
+
+        <ul class="explain-list">
+            <li>Line 44: One order ke many order items ho sakte hain.</li>
+            <li><span class="tag">cascade = CascadeType.ALL</span> means order save karoge to items bhi save honge.</li>
+            <li>Line 49: item order ke list me add hota hai.</li>
+            <li>Line 50: item ke andar parent order set hota hai. Isse order_items table me order_id set ho paata hai.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>8A. @OneToMany Line Detailed Walkthrough</h2>
+        <p class="muted">
+            Is single annotation me parent-child relation, save behavior, delete behavior, aur loading behavior define hota hai.
+        </p>
+        <div class="code-block">
+<span class="line">@OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)</span>
+<span class="line">@Builder.Default</span>
+<span class="line">private List&lt;OrderItem&gt; items = new ArrayList&lt;&gt;();</span>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Part</th>
+                <th>Simple Meaning</th>
+                <th>Why Needed Here</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td><span class="tag">@OneToMany</span></td>
+                <td>One Order ke andar many OrderItems ho sakte hain.</td>
+                <td>Ek customer order me Laptop, Mouse, Keyboard jaise multiple items ho sakte hain.</td>
+            </tr>
+            <tr>
+                <td><span class="tag">mappedBy = "order"</span></td>
+                <td>Relation ka owner OrderItem class ka <span class="tag">order</span> field hai.</td>
+                <td>Foreign key <span class="tag">order_id</span> child table <span class="tag">order_items</span> me hoti hai, parent table me nahi.</td>
+            </tr>
+            <tr>
+                <td><span class="tag">cascade = CascadeType.ALL</span></td>
+                <td>Parent Order par save/update/delete operation child items tak cascade ho sakta hai.</td>
+                <td>Hum sirf <span class="tag">orderRepository.save(order)</span> call karte hain; items automatically save ho jaate hain.</td>
+            </tr>
+            <tr>
+                <td><span class="tag">orphanRemoval = true</span></td>
+                <td>Agar item order ki list se remove hua, to wo database se bhi delete ho sakta hai.</td>
+                <td>Order ke bina OrderItem ka meaning nahi hai, so orphan item ko clean karna correct hai.</td>
+            </tr>
+            <tr>
+                <td><span class="tag">fetch = FetchType.LAZY</span></td>
+                <td>Order fetch karte waqt items immediately load nahi honge.</td>
+                <td>Performance better hoti hai. Items tab load honge jab <span class="tag">order.getItems()</span> call hoga.</td>
+            </tr>
+            <tr>
+                <td><span class="tag">@Builder.Default</span></td>
+                <td>Lombok builder use karte time default empty list preserve karta hai.</td>
+                <td>Without this, builder se Order banane par <span class="tag">items</span> null ho sakta tha, aur <span class="tag">addItem</span> par NullPointerException aa sakta tha.</td>
+            </tr>
+            <tr>
+                <td><span class="tag">new ArrayList&lt;&gt;()</span></td>
+                <td>Items list initially empty hai, null nahi.</td>
+                <td>New order banate hi items safely add kar sakte hain.</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="note">
+            Easy memory trick: <span class="tag">@OneToMany</span> relation batata hai,
+            <span class="tag">mappedBy</span> owner batata hai, <span class="tag">cascade</span> save behavior batata hai,
+            <span class="tag">orphanRemoval</span> delete behavior batata hai, aur <span class="tag">LAZY</span> loading behavior batata hai.
+        </div>
+    </section>
+
+    <section>
+        <h2>8B. mappedBy = "order" Ko Deeply Samjho</h2>
+        <p class="muted">
+            Ye confusing part hota hai. Is project me relation bidirectional hai: Order ko items pata hain,
+            aur OrderItem ko parent order pata hai.
+        </p>
+
+        <div class="two-col">
+            <div class="mini-card">
+                <h3>Parent Side: Order.java</h3>
+                <div class="code-block">
+<span class="line">@OneToMany(mappedBy = "order", ...)</span>
+<span class="line">private List&lt;OrderItem&gt; items;</span>
+                </div>
+                <p class="muted">Order ke paas child items ki list hai.</p>
+            </div>
+
+            <div class="mini-card">
+                <h3>Owner Side: OrderItem.java</h3>
+                <div class="code-block">
+<span class="line">@ManyToOne(fetch = FetchType.LAZY)</span>
+<span class="line">@JoinColumn(name = "order_id", nullable = false)</span>
+<span class="line">private Order order;</span>
+                </div>
+                <p class="muted">OrderItem table me actual foreign key <span class="tag">order_id</span> hoti hai.</p>
+            </div>
+        </div>
+
+        <div class="note warn">
+            <span class="tag">mappedBy = "order"</span> me jo "order" likha hai, wo database column name nahi hai.
+            Wo <span class="tag">OrderItem.java</span> ke field ka naam hai: <span class="tag">private Order order;</span>
+        </div>
+    </section>
+
+    <section>
+        <h2>8C. addItem Method Detailed Walkthrough</h2>
+        <div class="code-block">
+<span class="line">48: public void addItem(OrderItem item) {</span>
+<span class="line">49:     items.add(item);</span>
+<span class="line">50:     item.setOrder(this);</span>
+<span class="line">51: }</span>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Line</th>
+                <th>Meaning</th>
+                <th>Why Important</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>48</td>
+                <td>Helper method starts. It accepts one OrderItem.</td>
+                <td>Service code clean rehta hai: <span class="tag">order.addItem(item)</span>.</td>
+            </tr>
+            <tr>
+                <td>49</td>
+                <td>Item parent order ki list me add hota hai.</td>
+                <td>Now parent object knows: mere paas ye child item hai.</td>
+            </tr>
+            <tr>
+                <td>50</td>
+                <td>Child item ke andar parent order set hota hai.</td>
+                <td>Now child object knows: mera parent order kaun hai. Isi se <span class="tag">order_id</span> set hota hai.</td>
+            </tr>
+            <tr>
+                <td>51</td>
+                <td>Method ends.</td>
+                <td>Parent-child relation dono side se complete ho gaya.</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="note">
+            Sirf <span class="tag">items.add(item)</span> enough nahi hota. Database foreign key child side par hoti hai,
+            so <span class="tag">item.setOrder(this)</span> required hai.
+        </div>
+    </section>
+
+    <section>
+        <h2>9. Database Mapping</h2>
+        <div class="two-col">
+            <div class="mini-card">
+                <h3>Order Entity</h3>
+                <div class="code-block">
+<span class="line">13: @Entity</span>
+<span class="line">14: @Table(name = "orders")</span>
+<span class="line">22: @Id</span>
+<span class="line">23: @GeneratedValue(strategy = GenerationType.IDENTITY)</span>
+<span class="line">24: private Long id;</span>
+<span class="line">26: @Column(name = "customer_id", nullable = false)</span>
+<span class="line">27: private Long customerId;</span>
+                </div>
+                <p class="muted">Ye Java class database ke <span class="tag">orders</span> table ko represent karti hai.</p>
+            </div>
+
+            <div class="mini-card">
+                <h3>OrderItem Entity</h3>
+                <div class="code-block">
+<span class="line">8:  @Entity</span>
+<span class="line">9:  @Table(name = "order_items")</span>
+<span class="line">30: @ManyToOne(fetch = FetchType.LAZY)</span>
+<span class="line">31: @JoinColumn(name = "order_id", nullable = false)</span>
+<span class="line">32: private Order order;</span>
+                </div>
+                <p class="muted">Ye Java class database ke <span class="tag">order_items</span> table ko represent karti hai.</p>
+            </div>
+        </div>
+
+        <div class="note warn">
+            Relation simple hai: one order has many order_items. Child table me order_id foreign key hoti hai.
+        </div>
+    </section>
+
+    <section>
+        <h2>10. Save To Database</h2>
+        <div class="code-block">
+<span class="line">67: Order saved = orderRepository.save(order);</span>
+<span class="line">68: log.info("Order created with id: {}", saved.getId());</span>
+<span class="line">69: return mapToResponse(saved);</span>
+        </div>
+
+        <ul class="explain-list">
+            <li>Line 67: Repository ka save method call hota hai.</li>
+            <li>Repository Spring Data JPA se aata hai.</li>
+            <li>Order save hota hai in <span class="tag">orders</span> table.</li>
+            <li>Because cascade is enabled, items save hote hain in <span class="tag">order_items</span> table.</li>
+            <li>Database generated id saved object me aa jata hai.</li>
+        </ul>
+
+        <div class="code-block">
+<span class="line">14: @Repository</span>
+<span class="line">15: public interface OrderRepository extends JpaRepository&lt;Order, Long&gt; {</span>
+        </div>
+
+        <div class="note">
+            JpaRepository already save, findById, findAll, delete jaise methods provide karta hai. Isliye save method manually likhna nahi pada.
+        </div>
+    </section>
+
+    <section>
+        <h2>11. Response Mapping</h2>
+        <p class="muted">Database entity directly client ko return nahi karte. Entity ko response DTO me convert karte hain.</p>
+        <div class="code-block">
+<span class="line">137: private OrderResponse mapToResponse(Order order) {</span>
+<span class="line">138:     List&lt;OrderItemResponse&gt; itemResponses = order.getItems().stream()</span>
+<span class="line">139:             .map(item -&gt; OrderItemResponse.builder()</span>
+<span class="line">140:                     .id(item.getId())</span>
+<span class="line">141:                     .productName(item.getProductName())</span>
+<span class="line">142:                     .quantity(item.getQuantity())</span>
+<span class="line">143:                     .price(item.getPrice())</span>
+<span class="line">144:                     .build())</span>
+<span class="line">145:             .collect(Collectors.toList());</span>
+<span class="line"></span>
+<span class="line">147:     return OrderResponse.builder()</span>
+<span class="line">148:             .orderId(order.getId())</span>
+<span class="line">149:             .customerId(order.getCustomerId())</span>
+<span class="line">150:             .items(itemResponses)</span>
+<span class="line">151:             .totalAmount(order.getTotalAmount())</span>
+<span class="line">152:             .status(order.getStatus())</span>
+<span class="line">153:             .createdAt(order.getCreatedAt())</span>
+<span class="line">154:             .build();</span>
+<span class="line">155: }</span>
+        </div>
+
+        <ul class="explain-list">
+            <li>Line 138-145: OrderItem entity list ko OrderItemResponse list me convert karta hai.</li>
+            <li>Line 147-154: Final OrderResponse object build hota hai.</li>
+            <li>Controller is response ko JSON bana kar client ko return karta hai.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>12. Final Response</h2>
+        <p class="muted">Successful POST ke baad client ko 201 Created status aur JSON response milta hai.</p>
+        <div class="code-block">
+<span class="line">HTTP/1.1 201 Created</span>
+<span class="line">Content-Type: application/json</span>
+<span class="line"></span>
+<span class="line">{</span>
+<span class="line">  "orderId": 1,</span>
+<span class="line">  "customerId": 1001,</span>
+<span class="line">  "items": [</span>
+<span class="line">    { "id": 1, "productName": "Laptop", "quantity": 1, "price": 70000 },</span>
+<span class="line">    { "id": 2, "productName": "Mouse", "quantity": 2, "price": 1000 }</span>
+<span class="line">  ],</span>
+<span class="line">  "totalAmount": 72000,</span>
+<span class="line">  "status": "PENDING",</span>
+<span class="line">  "createdAt": "2026-06-18T12:45:00"</span>
+<span class="line">}</span>
+        </div>
+    </section>
+
+    <section>
+        <h2>13. Full Flow In Simple Words</h2>
+        <ol class="explain-list">
+            <li>Client POST /api/orders par JSON bhejta hai.</li>
+            <li>Spring JSON ko CreateOrderRequest object me convert karta hai.</li>
+            <li>@Valid validation run karta hai.</li>
+            <li>Controller service.createOrder(request) call karta hai.</li>
+            <li>Service new Order object banata hai with PENDING status.</li>
+            <li>Service har item ke liye OrderItem object banata hai.</li>
+            <li>Service item ko order me add karta hai aur total calculate karta hai.</li>
+            <li>Repository order save karta hai.</li>
+            <li>Cascade ki wajah se order_items bhi save hote hain.</li>
+            <li>Saved entity OrderResponse me convert hoti hai.</li>
+            <li>Controller 201 Created ke saath response return karta hai.</li>
+        </ol>
+    </section>
+
+    <section>
+        <h2>14. Scheduler Use Case</h2>
+        <p class="muted">
+            Scheduler ka kaam hota hai background me automatic task run karna. User ko API call karne ki zarurat nahi hoti.
+        </p>
+
+        <div class="note">
+            Is project me scheduler every 5 minutes PENDING orders ko PROCESSING me move karta hai.
+        </div>
+
+        <div class="two-col">
+            <div class="mini-card">
+                <h3>Real Life Example</h3>
+                <ul class="explain-list">
+                    <li>Customer order create karta hai.</li>
+                    <li>Order ka status PENDING hota hai.</li>
+                    <li>Warehouse/system kuch time baad order processing start karta hai.</li>
+                    <li>Scheduler automatically PENDING ko PROCESSING bana deta hai.</li>
+                </ul>
+            </div>
+
+            <div class="mini-card">
+                <h3>Why Scheduler?</h3>
+                <ul class="explain-list">
+                    <li>Manual API call ki need nahi.</li>
+                    <li>Repeated work automatic ho jata hai.</li>
+                    <li>Background processing cleanly service layer me rehta hai.</li>
+                    <li>Future me email, cleanup, retry jobs bhi add kiye ja sakte hain.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>15. Scheduler Class Line By Line</h2>
+        <div class="code-block">
+<span class="line">9:  @Component</span>
+<span class="line">10: @RequiredArgsConstructor</span>
+<span class="line">11: @Slf4j</span>
+<span class="line">12: public class OrderStatusScheduler {</span>
+<span class="line"></span>
+<span class="line">14:     private final OrderService orderService;</span>
+<span class="line"></span>
+<span class="line">16:     // Runs every 5 minutes</span>
+<span class="line">17:     @Scheduled(cron = "0 */5 * * * *")</span>
+<span class="line">18:     public void processPendingOrders() {</span>
+<span class="line">19:         log.info("Scheduler triggered: processing PENDING orders");</span>
+<span class="line">20:         orderService.processPendingOrders();</span>
+<span class="line">21:     }</span>
+<span class="line">22: }</span>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Line</th>
+                <th>Meaning</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>9</td>
+                <td><span class="tag">@Component</span> Spring ko bolta hai ki is class ka object create karo and manage karo.</td>
+            </tr>
+            <tr>
+                <td>10</td>
+                <td><span class="tag">@RequiredArgsConstructor</span> final field ke liye constructor generate karta hai.</td>
+            </tr>
+            <tr>
+                <td>11</td>
+                <td><span class="tag">@Slf4j</span> logger provide karta hai, isliye <span class="tag">log.info</span> use kar sakte hain.</td>
+            </tr>
+            <tr>
+                <td>14</td>
+                <td>Scheduler service ko call karega. Actual business logic scheduler me nahi, service me hai.</td>
+            </tr>
+            <tr>
+                <td>17</td>
+                <td><span class="tag">@Scheduled</span> method ko automatic time interval par run karta hai.</td>
+            </tr>
+            <tr>
+                <td>18</td>
+                <td>Ye method Spring automatically call karega every 5 minutes.</td>
+            </tr>
+            <tr>
+                <td>19</td>
+                <td>Log print hota hai so hume pata chale scheduler trigger hua.</td>
+            </tr>
+            <tr>
+                <td>20</td>
+                <td>Service layer ka <span class="tag">processPendingOrders()</span> call hota hai.</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>16. Cron Expression Explained</h2>
+        <div class="code-block">
+<span class="line">@Scheduled(cron = "0 */5 * * * *")</span>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Part</th>
+                <th>Value</th>
+                <th>Meaning</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>Second</td>
+                <td><span class="tag">0</span></td>
+                <td>Minute ke 0th second par run karo.</td>
+            </tr>
+            <tr>
+                <td>Minute</td>
+                <td><span class="tag">*/5</span></td>
+                <td>Har 5 minute me run karo.</td>
+            </tr>
+            <tr>
+                <td>Hour</td>
+                <td><span class="tag">*</span></td>
+                <td>Har hour me allowed.</td>
+            </tr>
+            <tr>
+                <td>Day</td>
+                <td><span class="tag">*</span></td>
+                <td>Har day me allowed.</td>
+            </tr>
+            <tr>
+                <td>Month</td>
+                <td><span class="tag">*</span></td>
+                <td>Har month me allowed.</td>
+            </tr>
+            <tr>
+                <td>Weekday</td>
+                <td><span class="tag">*</span></td>
+                <td>Har weekday me allowed.</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="note">
+            Ye scheduler 12:00:00, 12:05:00, 12:10:00, 12:15:00 jaise times par run karega.
+        </div>
+    </section>
+
+    <section>
+        <h2>17. Service Scheduler Logic Line By Line</h2>
+        <div class="code-block">
+<span class="line">117: @Override</span>
+<span class="line">118: @Transactional</span>
+<span class="line">119: public void processPendingOrders() {</span>
+<span class="line">120:     List&lt;Order&gt; pendingOrders = orderRepository.findByStatus(OrderStatus.PENDING);</span>
+<span class="line">121:     if (pendingOrders.isEmpty()) {</span>
+<span class="line">122:         log.debug("No PENDING orders to process");</span>
+<span class="line">123:         return;</span>
+<span class="line">124:     }</span>
+<span class="line">125:     pendingOrders.forEach(order -&gt; order.setStatus(OrderStatus.PROCESSING));</span>
+<span class="line">126:     orderRepository.saveAll(pendingOrders);</span>
+<span class="line">127:     log.info("Scheduler: {} PENDING orders moved to PROCESSING", pendingOrders.size());</span>
+<span class="line">128: }</span>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Line</th>
+                <th>Meaning</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>118</td>
+                <td><span class="tag">@Transactional</span> required hai because database me update ho raha hai.</td>
+            </tr>
+            <tr>
+                <td>120</td>
+                <td>Repository se saare PENDING orders fetch hote hain.</td>
+            </tr>
+            <tr>
+                <td>121-124</td>
+                <td>Agar koi pending order nahi mila, log print karke method stop ho jata hai.</td>
+            </tr>
+            <tr>
+                <td>125</td>
+                <td>Har pending order ka status PROCESSING set hota hai.</td>
+            </tr>
+            <tr>
+                <td>126</td>
+                <td>Updated orders database me save hote hain.</td>
+            </tr>
+            <tr>
+                <td>127</td>
+                <td>Kitne orders update hue, ye log me print hota hai.</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>18. Order Save Kaise Ho Raha Hai?</h2>
+        <p class="muted">
+            POST API me order save karne ke liye service pehle Java objects banati hai,
+            fir Spring Data JPA repository un objects ko database rows me convert karke save karta hai.
+        </p>
+
+        <div class="code-block">
+<span class="line">49: Order order = Order.builder()</span>
+<span class="line">50:         .customerId(request.getCustomerId())</span>
+<span class="line">51:         .status(OrderStatus.PENDING)</span>
+<span class="line">52:         .totalAmount(BigDecimal.ZERO)</span>
+<span class="line">53:         .build();</span>
+<span class="line"></span>
+<span class="line">56: for (OrderItemRequest itemReq : request.getItems()) {</span>
+<span class="line">57:     OrderItem item = OrderItem.builder()</span>
+<span class="line">58:             .productName(itemReq.getProductName())</span>
+<span class="line">59:             .quantity(itemReq.getQuantity())</span>
+<span class="line">60:             .price(itemReq.getPrice())</span>
+<span class="line">61:             .build();</span>
+<span class="line">62:     order.addItem(item);</span>
+<span class="line">63:     total = total.add(itemReq.getPrice().multiply(BigDecimal.valueOf(itemReq.getQuantity())));</span>
+<span class="line">64: }</span>
+<span class="line">65: order.setTotalAmount(total);</span>
+<span class="line"></span>
+<span class="line">67: Order saved = orderRepository.save(order);</span>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Step</th>
+                <th>What Happens</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>1</td>
+                <td>Line 49-53: Empty Order object banta hai. Isme customerId, PENDING status, aur initial total 0 set hota hai.</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>Line 56-64: Request ke har item ke liye OrderItem object banta hai.</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>Line 62: <span class="tag">order.addItem(item)</span> parent-child relation set karta hai.</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>Line 63-65: Total amount calculate karke Order me set hota hai.</td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td>Line 67: <span class="tag">orderRepository.save(order)</span> database me order save karta hai.</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="note">
+            Important: Humne manually SQL insert query nahi likhi. <span class="tag">JpaRepository</span>
+            aur Hibernate Java entity ko database insert statements me convert kar dete hain.
+        </div>
+    </section>
+
+    <section>
+        <h2>19. Save Ke Time Database Me Kya Insert Hota Hai?</h2>
+        <p class="muted">
+            Jab <span class="tag">orderRepository.save(order)</span> call hota hai, Hibernate roughly ye kaam karta hai.
+        </p>
+
+        <div class="code-block">
+<span class="line">-- 1. Parent order save hota hai</span>
+<span class="line">insert into orders (customer_id, total_amount, status, created_at, updated_at)</span>
+<span class="line">values (1001, 72000.00, 'PENDING', now(), now());</span>
+<span class="line"></span>
+<span class="line">-- 2. Database generated order id maan lo 1 hai</span>
+<span class="line"></span>
+<span class="line">-- 3. Child items save hote hain with order_id = 1</span>
+<span class="line">insert into order_items (product_name, quantity, price, order_id)</span>
+<span class="line">values ('Laptop', 1, 70000.00, 1);</span>
+<span class="line"></span>
+<span class="line">insert into order_items (product_name, quantity, price, order_id)</span>
+<span class="line">values ('Mouse', 2, 1000.00, 1);</span>
+        </div>
+
+        <div class="note">
+            Ye child item inserts isliye automatically hote hain kyunki relation me
+            <span class="tag">cascade = CascadeType.ALL</span> laga hua hai.
+        </div>
+    </section>
+
+    <section>
+        <h2>20. Status Kaise Maintain Ho Raha Hai?</h2>
+        <p class="muted">
+            Status ek enum hai. Order entity me status field database me string ke form me save hota hai.
+        </p>
+
+        <div class="code-block">
+<span class="line">32: @Enumerated(EnumType.STRING)</span>
+<span class="line">33: @Column(nullable = false, length = 20)</span>
+<span class="line">34: private OrderStatus status;</span>
+        </div>
+
+        <ul class="explain-list">
+            <li><span class="tag">@Enumerated(EnumType.STRING)</span> means enum value database me text ke form me save hogi.</li>
+            <li>Example: <span class="tag">PENDING</span>, <span class="tag">PROCESSING</span>, <span class="tag">SHIPPED</span>, <span class="tag">DELIVERED</span>.</li>
+            <li><span class="tag">nullable = false</span> means status empty/null nahi ho sakta.</li>
+        </ul>
+
+        <div class="note">
+            Jab order create hota hai, service line 51 par status set karti hai:
+            <span class="tag">.status(OrderStatus.PENDING)</span>. Isliye every new order starts as PENDING.
+        </div>
+    </section>
+
+    <section>
+        <h2>21. Status Lifecycle Code Me Kaise Enforce Ho Raha Hai?</h2>
+        <p class="muted">
+            Project valid transitions map maintain karta hai. Is map se decide hota hai ki current status se next status allowed hai ya nahi.
+        </p>
+
+        <div class="code-block">
+<span class="line">33: // Valid transitions map: current status -&gt; allowed next statuses</span>
+<span class="line">34: private static final Map&lt;OrderStatus, Set&lt;OrderStatus&gt;&gt; VALID_TRANSITIONS = new EnumMap&lt;&gt;(OrderStatus.class);</span>
+<span class="line"></span>
+<span class="line">36: static {</span>
+<span class="line">37:     VALID_TRANSITIONS.put(OrderStatus.PENDING, Set.of(OrderStatus.PROCESSING, OrderStatus.CANCELLED));</span>
+<span class="line">38:     VALID_TRANSITIONS.put(OrderStatus.PROCESSING, Set.of(OrderStatus.SHIPPED));</span>
+<span class="line">39:     VALID_TRANSITIONS.put(OrderStatus.SHIPPED, Set.of(OrderStatus.DELIVERED));</span>
+<span class="line">40:     VALID_TRANSITIONS.put(OrderStatus.DELIVERED, Set.of());</span>
+<span class="line">41:     VALID_TRANSITIONS.put(OrderStatus.CANCELLED, Set.of());</span>
+<span class="line">42: }</span>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Current Status</th>
+                <th>Allowed Next Status</th>
+                <th>Meaning</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>PENDING</td>
+                <td>PROCESSING, CANCELLED</td>
+                <td>New order process ho sakta hai ya cancel ho sakta hai.</td>
+            </tr>
+            <tr>
+                <td>PROCESSING</td>
+                <td>SHIPPED</td>
+                <td>Processing ke baad order ship hoga.</td>
+            </tr>
+            <tr>
+                <td>SHIPPED</td>
+                <td>DELIVERED</td>
+                <td>Shipped ke baad customer ko deliver hoga.</td>
+            </tr>
+            <tr>
+                <td>DELIVERED</td>
+                <td>No next status</td>
+                <td>Delivered final state hai.</td>
+            </tr>
+            <tr>
+                <td>CANCELLED</td>
+                <td>No next status</td>
+                <td>Cancelled final state hai.</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="note">
+            Normal lifecycle: <span class="tag">PENDING -&gt; PROCESSING -&gt; SHIPPED -&gt; DELIVERED</span>.
+            Cancel path: <span class="tag">PENDING -&gt; CANCELLED</span>.
+        </div>
+    </section>
+
+    <section>
+        <h2>22. Status Update API Flow</h2>
+        <p class="muted">
+            Jab user manually status update karta hai, ye method run hota hai.
+        </p>
+
+        <div class="code-block">
+<span class="line">80: @Override</span>
+<span class="line">81: @Transactional</span>
+<span class="line">82: public OrderResponse updateOrderStatus(Long id, UpdateStatusRequest request) {</span>
+<span class="line">83:     Order order = orderRepository.findById(id)</span>
+<span class="line">84:             .orElseThrow(() -&gt; new OrderNotFoundException(id));</span>
+<span class="line"></span>
+<span class="line">86:     validateTransition(order.getStatus(), request.getStatus());</span>
+<span class="line">87:     order.setStatus(request.getStatus());</span>
+<span class="line">88:     Order updated = orderRepository.save(order);</span>
+<span class="line">89:     log.info("Order {} status updated: {} -&gt; {}", id, order.getStatus(), request.getStatus());</span>
+<span class="line">90:     return mapToResponse(updated);</span>
+<span class="line">91: }</span>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Line</th>
+                <th>Meaning</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>83-84</td>
+                <td>Order id se database me order search hota hai. Nahi mila to 404.</td>
+            </tr>
+            <tr>
+                <td>86</td>
+                <td>Current status aur requested status valid hai ya nahi check hota hai.</td>
+            </tr>
+            <tr>
+                <td>87</td>
+                <td>Agar transition valid hai, order ka status update hota hai.</td>
+            </tr>
+            <tr>
+                <td>88</td>
+                <td>Updated status database me save hota hai.</td>
+            </tr>
+            <tr>
+                <td>90</td>
+                <td>Updated order response client ko return hota hai.</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>23. validateTransition Method</h2>
+        <p class="muted">
+            Ye method actual guard hai. Ye invalid status jump ko block karta hai.
+        </p>
+
+        <div class="code-block">
+<span class="line">130: private void validateTransition(OrderStatus current, OrderStatus next) {</span>
+<span class="line">131:     Set&lt;OrderStatus&gt; allowed = VALID_TRANSITIONS.getOrDefault(current, Set.of());</span>
+<span class="line">132:     if (!allowed.contains(next)) {</span>
+<span class="line">133:         throw new InvalidStatusTransitionException(current, next);</span>
+<span class="line">134:     }</span>
+<span class="line">135: }</span>
+        </div>
+
+        <ul class="explain-list">
+            <li>Line 131: Current status ke allowed next statuses map se milte hain.</li>
+            <li>Example: current PENDING hai to allowed = PROCESSING, CANCELLED.</li>
+            <li>Line 132: Agar requested next status allowed list me nahi hai, to error throw hota hai.</li>
+            <li>Line 133: Invalid transition par API 400 Bad Request return karegi.</li>
+        </ul>
+
+        <div class="note warn">
+            Example: PENDING se DELIVERED direct allowed nahi hai. Pehle PROCESSING, fir SHIPPED, fir DELIVERED jaana padega.
+        </div>
+    </section>
+
+    <section>
+        <h2>24. Scheduler Status Ko Kaise Change Karta Hai?</h2>
+        <p class="muted">
+            Scheduler manual API ke bina PENDING orders ko PROCESSING banata hai.
+            Ye lifecycle ka first automatic step hai.
+        </p>
+
+        <div class="code-block">
+<span class="line">120: List&lt;Order&gt; pendingOrders = orderRepository.findByStatus(OrderStatus.PENDING);</span>
+<span class="line">125: pendingOrders.forEach(order -&gt; order.setStatus(OrderStatus.PROCESSING));</span>
+<span class="line">126: orderRepository.saveAll(pendingOrders);</span>
+        </div>
+
+        <ul class="explain-list">
+            <li>Line 120: Database se sirf PENDING orders nikale jaate hain.</li>
+            <li>Line 125: Har pending order ka status PROCESSING set hota hai.</li>
+            <li>Line 126: Saare updated orders database me save hote hain.</li>
+        </ul>
+
+        <div class="note">
+            Iske baad SHIPPED aur DELIVERED manually status update API se kiye ja sakte hain:
+            <span class="tag">PUT /api/orders/{id}/status</span>.
+        </div>
+    </section>
+</main>
+</body>
+</html>

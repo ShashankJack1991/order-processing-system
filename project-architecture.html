@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Processing System - Simple Architecture</title>
+    <style>
+        :root {
+            --bg: #f4f7fb;
+            --text: #1f2937;
+            --muted: #5f6b7a;
+            --card: #ffffff;
+            --line: #d8dee9;
+            --blue: #2563eb;
+            --green: #0f766e;
+            --orange: #b45309;
+            --red: #b42318;
+            --purple: #7c3aed;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1.5;
+        }
+
+        header {
+            background: #111827;
+            color: #ffffff;
+            padding: 34px 20px;
+        }
+
+        .wrap {
+            width: min(1050px, calc(100% - 28px));
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            font-size: 2.4rem;
+            letter-spacing: 0;
+        }
+
+        h2 {
+            margin: 0 0 16px;
+            font-size: 1.55rem;
+            letter-spacing: 0;
+        }
+
+        h3 {
+            margin: 0 0 8px;
+            font-size: 1.05rem;
+            letter-spacing: 0;
+        }
+
+        p {
+            margin: 0;
+        }
+
+        main {
+            padding: 26px 0 48px;
+        }
+
+        section {
+            margin-top: 22px;
+            background: var(--card);
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 22px;
+        }
+
+        .intro {
+            color: #d1d5db;
+            max-width: 780px;
+        }
+
+        .simple-line {
+            display: grid;
+            grid-template-columns: 1fr 48px 1fr 48px 1fr 48px 1fr;
+            gap: 0;
+            align-items: stretch;
+        }
+
+        .box {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 16px;
+            background: #ffffff;
+            min-height: 135px;
+        }
+
+        .box.client { border-top: 5px solid var(--blue); }
+        .box.controller { border-top: 5px solid var(--green); }
+        .box.service { border-top: 5px solid var(--purple); }
+        .box.database { border-top: 5px solid var(--orange); }
+
+        .arrow {
+            display: grid;
+            place-items: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4b5563;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+
+        .step {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 16px;
+            background: #ffffff;
+        }
+
+        .number {
+            display: inline-grid;
+            place-items: center;
+            width: 30px;
+            height: 30px;
+            margin-bottom: 10px;
+            border-radius: 50%;
+            background: #e0ecff;
+            color: #1d4ed8;
+            font-weight: 700;
+        }
+
+        .api {
+            display: inline-block;
+            margin-top: 9px;
+            padding: 5px 8px;
+            border-radius: 6px;
+            background: #f3f4f6;
+            color: #374151;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 0.85rem;
+            overflow-wrap: anywhere;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .list {
+            margin: 10px 0 0;
+            padding-left: 18px;
+            color: var(--muted);
+        }
+
+        .status-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .status {
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            text-align: center;
+            font-weight: 700;
+            background: #ffffff;
+        }
+
+        .pending { border-top: 5px solid var(--orange); }
+        .processing { border-top: 5px solid var(--blue); }
+        .shipped { border-top: 5px solid var(--purple); }
+        .delivered { border-top: 5px solid var(--green); }
+        .cancelled { border-top: 5px solid var(--red); }
+
+        .note {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-left: 4px solid var(--blue);
+            background: #eff6ff;
+            color: #1e3a8a;
+            border-radius: 6px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--line);
+            padding: 11px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #111827;
+            color: #ffffff;
+        }
+
+        @media (max-width: 850px) {
+            .simple-line,
+            .steps,
+            .two-col,
+            .status-row {
+                grid-template-columns: 1fr;
+            }
+
+            .arrow {
+                transform: rotate(90deg);
+                min-height: 38px;
+            }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="wrap">
+        <h1>Order Processing System</h1>
+        <p class="intro">
+            This page explains the project in a simple way: who sends the request,
+            which Java classes handle it, where business logic runs, and how data is stored.
+        </p>
+    </div>
+</header>
+
+<main class="wrap">
+    <section>
+        <h2>1. Big Picture</h2>
+        <div class="simple-line">
+            <div class="box client">
+                <h3>Client</h3>
+                <p class="muted">Browser, Postman, curl, or frontend sends an HTTP request.</p>
+            </div>
+            <div class="arrow">-&gt;</div>
+            <div class="box controller">
+                <h3>Controller</h3>
+                <p class="muted">Receives API request and sends it to the service layer.</p>
+                <span class="api">OrderController</span>
+            </div>
+            <div class="arrow">-&gt;</div>
+            <div class="box service">
+                <h3>Service</h3>
+                <p class="muted">Contains main business logic like create order, cancel order, and status update.</p>
+                <span class="api">OrderServiceImpl</span>
+            </div>
+            <div class="arrow">-&gt;</div>
+            <div class="box database">
+                <h3>Database</h3>
+                <p class="muted">Stores orders and order items using PostgreSQL.</p>
+                <span class="api">orders, order_items</span>
+            </div>
+        </div>
+
+        <div class="note">
+            Simple meaning: request comes from client, controller accepts it, service processes it,
+            repository saves or reads data from database, then response goes back to client.
+        </div>
+    </section>
+
+    <section>
+        <h2>2. Project Packages</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Package</th>
+                <th>Purpose</th>
+                <th>Example Files</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>controller</td>
+                <td>API endpoints are written here.</td>
+                <td>OrderController.java, HomeController.java</td>
+            </tr>
+            <tr>
+                <td>service</td>
+                <td>Business rules are written here.</td>
+                <td>OrderService.java, OrderServiceImpl.java</td>
+            </tr>
+            <tr>
+                <td>repository</td>
+                <td>Database access is written here.</td>
+                <td>OrderRepository.java, OrderItemRepository.java</td>
+            </tr>
+            <tr>
+                <td>entity</td>
+                <td>Java classes that represent database tables.</td>
+                <td>Order.java, OrderItem.java, OrderStatus.java</td>
+            </tr>
+            <tr>
+                <td>dto</td>
+                <td>Request and response objects for APIs.</td>
+                <td>CreateOrderRequest.java, OrderResponse.java</td>
+            </tr>
+            <tr>
+                <td>exception</td>
+                <td>Handles errors in one common format.</td>
+                <td>GlobalExceptionHandler.java</td>
+            </tr>
+            <tr>
+                <td>scheduler</td>
+                <td>Background job for automatic order processing.</td>
+                <td>OrderStatusScheduler.java</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>3. Create Order Flow</h2>
+        <div class="steps">
+            <div class="step">
+                <span class="number">1</span>
+                <h3>Client sends order</h3>
+                <p class="muted">Customer id and item list are sent to the API.</p>
+                <span class="api">POST /api/orders</span>
+            </div>
+            <div class="step">
+                <span class="number">2</span>
+                <h3>Controller validates request</h3>
+                <p class="muted">It checks required fields like customerId, items, price, and quantity.</p>
+            </div>
+            <div class="step">
+                <span class="number">3</span>
+                <h3>Service creates order</h3>
+                <p class="muted">It calculates total amount and sets status as PENDING.</p>
+            </div>
+            <div class="step">
+                <span class="number">4</span>
+                <h3>Repository saves data</h3>
+                <p class="muted">Order and order items are inserted into PostgreSQL.</p>
+            </div>
+            <div class="step">
+                <span class="number">5</span>
+                <h3>Response is created</h3>
+                <p class="muted">Saved order is converted into OrderResponse.</p>
+            </div>
+            <div class="step">
+                <span class="number">6</span>
+                <h3>Client receives result</h3>
+                <p class="muted">API returns 201 Created with order details.</p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>4. Main API Flows</h2>
+        <div class="two-col">
+            <div class="step">
+                <h3>Get One Order</h3>
+                <p class="muted">Used to fetch a single order by id.</p>
+                <span class="api">GET /api/orders/{id}</span>
+                <ul class="list">
+                    <li>Controller receives id.</li>
+                    <li>Service asks repository for order.</li>
+                    <li>If found, API returns order details.</li>
+                    <li>If not found, API returns 404.</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h3>Get All Orders</h3>
+                <p class="muted">Used to list orders with pagination and optional status filter.</p>
+                <span class="api">GET /api/orders?status=PENDING&page=0&size=10</span>
+                <ul class="list">
+                    <li>Controller receives filter and pagination.</li>
+                    <li>Service checks whether status filter exists.</li>
+                    <li>Repository returns matching orders.</li>
+                    <li>API returns paged response.</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h3>Update Status</h3>
+                <p class="muted">Used to move order from one status to next valid status.</p>
+                <span class="api">PUT /api/orders/{id}/status</span>
+                <ul class="list">
+                    <li>Service checks current status.</li>
+                    <li>Service checks requested next status.</li>
+                    <li>If transition is valid, order is saved.</li>
+                    <li>If invalid, API returns 400.</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h3>Cancel Order</h3>
+                <p class="muted">Used to cancel an order only when it is still PENDING.</p>
+                <span class="api">PUT /api/orders/{id}/cancel</span>
+                <ul class="list">
+                    <li>If order is PENDING, it becomes CANCELLED.</li>
+                    <li>If order is not PENDING, API returns 409 conflict.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>5. Order Status Lifecycle</h2>
+        <p class="muted">An order cannot jump to any status. It must follow allowed steps.</p>
+        <div class="status-row">
+            <div class="status pending">PENDING</div>
+            <div class="status processing">PROCESSING</div>
+            <div class="status shipped">SHIPPED</div>
+            <div class="status delivered">DELIVERED</div>
+        </div>
+        <div class="status-row">
+            <div class="status pending">PENDING</div>
+            <div class="status cancelled">CANCELLED</div>
+        </div>
+        <div class="note">
+            Easy rule: normal order moves PENDING -> PROCESSING -> SHIPPED -> DELIVERED.
+            Cancel is allowed only from PENDING.
+        </div>
+    </section>
+
+    <section>
+        <h2>6. Scheduler Flow</h2>
+        <p class="muted">Scheduler means background task. It runs automatically without user request.</p>
+        <div class="steps">
+            <div class="step">
+                <span class="number">1</span>
+                <h3>Every 5 minutes</h3>
+                <p class="muted">Spring runs OrderStatusScheduler.</p>
+            </div>
+            <div class="step">
+                <span class="number">2</span>
+                <h3>Find pending orders</h3>
+                <p class="muted">Service asks repository for all PENDING orders.</p>
+            </div>
+            <div class="step">
+                <span class="number">3</span>
+                <h3>Update status</h3>
+                <p class="muted">All pending orders become PROCESSING.</p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>7. Database Design</h2>
+        <div class="two-col">
+            <div class="step">
+                <h3>orders table</h3>
+                <ul class="list">
+                    <li>id</li>
+                    <li>customer_id</li>
+                    <li>total_amount</li>
+                    <li>status</li>
+                    <li>created_at</li>
+                    <li>updated_at</li>
+                </ul>
+            </div>
+            <div class="step">
+                <h3>order_items table</h3>
+                <ul class="list">
+                    <li>id</li>
+                    <li>product_name</li>
+                    <li>quantity</li>
+                    <li>price</li>
+                    <li>order_id</li>
+                </ul>
+            </div>
+        </div>
+        <div class="note">
+            One order can have many order items. That is why order_items has order_id.
+        </div>
+    </section>
+
+    <section>
+        <h2>8. Simple Summary</h2>
+        <div class="steps">
+            <div class="step">
+                <h3>Controller</h3>
+                <p class="muted">Talks to outside world using REST APIs.</p>
+            </div>
+            <div class="step">
+                <h3>Service</h3>
+                <p class="muted">Makes decisions and applies business rules.</p>
+            </div>
+            <div class="step">
+                <h3>Repository</h3>
+                <p class="muted">Talks to the database.</p>
+            </div>
+        </div>
+    </section>
+</main>
+</body>
+</html>
