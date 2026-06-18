@@ -16,6 +16,47 @@ E-commerce Order Processing REST API built with Spring Boot 3, PostgreSQL, and D
 
 ---
 
+## Architecture
+
+```mermaid
+flowchart TD
+    Client([Client]) -->|HTTP Request| Controller
+
+    subgraph Spring Boot Application
+        Controller[Controller Layer\nOrderController]
+        Service[Service Layer\nOrderServiceImpl]
+        Repository[Repository Layer\nOrderRepository]
+        Scheduler[Scheduler\nEvery 5 mins]
+        ExHandler[Global Exception Handler]
+    end
+
+    Controller -->|Validates & delegates| Service
+    Service -->|CRUD operations| Repository
+    Repository -->|SQL via Hibernate| DB[(PostgreSQL)]
+    Scheduler -->|PENDING → PROCESSING| Service
+    Controller -.->|Exceptions| ExHandler
+    ExHandler -.->|Error Response| Client
+    Service -->|DTO Response| Controller
+    Controller -->|HTTP Response| Client
+```
+
+---
+
+## Order Status Flow
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING
+    PENDING --> PROCESSING
+    PENDING --> CANCELLED
+    PROCESSING --> SHIPPED
+    SHIPPED --> DELIVERED
+    DELIVERED --> [*]
+    CANCELLED --> [*]
+```
+
+---
+
 ## Project Structure
 
 ```
