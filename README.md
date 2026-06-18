@@ -20,7 +20,6 @@
 12. [Local Setup](#12-local-setup)
 13. [Docker Setup](#13-docker-setup)
 14. [Configuration](#14-configuration)
-15. [Future Enhancements](#15-future-enhancements)
 ---
 
 ## 1. Project Overview
@@ -529,19 +528,4 @@ spring:
 
 To change database credentials, update the `datasource` section above.
 
----
-
-## 15. Future Enhancements
-
-| Enhancement | Description |
-|---|---|
-| JWT Authentication | Secure APIs with token-based auth |
-| Role-based Access | Admin vs customer permissions |
-| Redis Caching | Cache frequently read orders to reduce DB load |
-| Kafka Integration | Event-driven order status updates |
-| Inventory Service | Validate stock before confirming an order |
-| Payment Integration | Link orders to payment gateway transactions |
-| Actuator + Prometheus | Health checks and metrics endpoint |
-| Distributed Tracing | Add trace IDs across service calls (Micrometer/Zipkin) |
-| API Rate Limiting | Protect endpoints from abuse |
 
