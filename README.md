@@ -21,8 +21,6 @@
 13. [Docker Setup](#13-docker-setup)
 14. [Configuration](#14-configuration)
 15. [Future Enhancements](#15-future-enhancements)
-16. [AI Assistance Disclosure](#16-ai-assistance-disclosure)
-
 ---
 
 ## 1. Project Overview
@@ -547,25 +545,3 @@ To change database credentials, update the `datasource` section above.
 | Distributed Tracing | Add trace IDs across service calls (Micrometer/Zipkin) |
 | API Rate Limiting | Protect endpoints from abuse |
 
----
-
-## 16. AI Assistance Disclosure
-
-This project was developed with the assistance of **Claude (Anthropic)** as a coding productivity tool.
-
-**Where AI was used:**
-- Initial project scaffolding and Maven configuration
-- Boilerplate generation for entity, DTO, and repository classes
-- Writing JUnit and MockMvc test cases
-
-**Manual work and review:**
-- Architecture decisions (layer responsibilities, DTO pattern, transition logic)
-- Business rule design (status transition map using `EnumMap`)
-- Bug identification and fixes:
-  - Added `@Param("id")` to the JPQL named parameter in `OrderRepository`
-  - Fixed `@WebMvcTest` to not include `@RestControllerAdvice` in the controllers list
-  - Added `defer-datasource-initialization: true` to fix `data.sql` timing with Hibernate DDL
-- Code review and validation of all generated output
-- Integration testing and final verification
-
-AI was used as a tool to accelerate development — all design decisions, review, and correctness verification were done manually.
