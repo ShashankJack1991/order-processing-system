@@ -19,7 +19,6 @@
 11. [Testing](#11-testing)
 12. [Local Setup](#12-local-setup)
 13. [Docker Setup](#13-docker-setup)
-14. [Configuration](#14-configuration)
 ---
 
 ## 1. Project Overview
@@ -500,32 +499,5 @@ docker-compose down -v
 ```
 
 ---
-
-## 14. Configuration
-
-All configuration is in `src/main/resources/application.yml`.
-
-```yaml
-server:
-  port: 8080
-
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/orderdb
-    username: postgres
-    password: postgres
-
-  jpa:
-    hibernate:
-      ddl-auto: update        # Auto-creates/updates tables on startup
-    defer-datasource-initialization: true  # Ensures data.sql runs after DDL
-    show-sql: true
-
-  sql:
-    init:
-      mode: always            # Runs data.sql on every startup
-```
-
-To change database credentials, update the `datasource` section above.
 
 
